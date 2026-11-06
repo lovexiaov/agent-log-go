@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lovexiaov/ai-dev-spec/docs/logging-framework/schema/log-event.schema.json",
+  "title": "AgentLogEvent",
+  "description": "面向 Agent 的统一结构化日志事件 —— Schema v1 线格式。所有端（Web / macOS / 服务端 / 未来新增端）输出的每一条 JSONL 都必须满足本 schema。语言内部命名（camelCase 属性名）不受约束，只在序列化边界做映射。",
+  "version": "1.0.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "ts",
+    "level",
+    "service",
+    "event_type",
+    "session_id",
+    "agent_auto",
+    "message"
+  ],
+  "properties": {
+    "ts": {
+      "type": "string",
+      "description": "事件时间，RFC3339 / ISO8601（带时区或 Z）。",
+      "examples": ["2026-11-02T13:37:21.123Z"]
+    },
+    "level": {
+      "type": "string",
+      "description": "日志级别。写入端只允许这 6 个值；warning 是 warn 的读取端兼容别名，禁止写出。",
+      "enum": ["trace", "debug", "info", "warn", "error", "critical"]
+    },
+    "service": {
+      "type": "string",
+      "minLength": 1,
+      "description": "服务 / App 标识，如 web-api、com.yourapp.agent。"
+    },
+    "event_type": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "description": "语义事件名（snake_case）。普通日志固定为 log；自动埋点用 ui_interaction / network_request / crash / hang 等。Agent 优先按此字段过滤。"
+    },
+    "session_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "一次运行 / 会话的稳定标识，用于把同一次运行的事件聚合。"
+    },
+    "trace_id": {
+      "type": "string",
+      "description": "跨端 / 跨请求追踪 id，与 HTTP traceparent 同源，用于把多端日志串成一条链路。"
+    },
+    "agent_auto": {
+      "type": "boolean",
+      "description": "true = 框架自动埋点产生（机器视角时间线）；false = 业务代码手动写入。"
+    },
+    "message": {
+      "type": "string",
+      "description": "人可读摘要，必须已脱敏。"
+    },
+    "subsystem": {
+      "type": "string",
+      "description": "子系统标识，通常为反向域名。"
+    },
+    "category": {
+      "type": "string",
+      "description": "业务分类，如 app / auth / payment。"
+    },
+    "env": {
+      "type": "string",
+      "description": "运行环境，如 dev / staging / prod。"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "用户标识（不得写入可用于直接识别的个人信息，建议为内部 id）。"
+    },
+    "payload": {
+      "type": "object",
+      "description": "事件专属上下文（已脱敏）。所有非保留字段一律放在这里，禁止在顶层扩展。",
+      "additionalProperties": true
+    }
+  }
+}

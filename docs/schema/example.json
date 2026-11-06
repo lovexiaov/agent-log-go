@@ -1,0 +1,20 @@
+{
+  "ts": "2026-11-02T13:37:21.123Z",
+  "level": "info",
+  "service": "com.yourapp.agent",
+  "subsystem": "com.yourapp.agent",
+  "category": "auto",
+  "event_type": "network_request",
+  "session_id": "8f14e45f-ea0a-4c1b-9c3e-0d5b2c7a9e11",
+  "trace_id": "trace_3f9a1c2b7d4e",
+  "agent_auto": true,
+  "message": "GET https://api.example.com/orders -> 200 (128ms)",
+  "env": "prod",
+  "payload": {
+    "host": "api.example.com",
+    "path": "/orders",
+    "method": "GET",
+    "status": 200,
+    "duration_ms": 128
+  }
+}

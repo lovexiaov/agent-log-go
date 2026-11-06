@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+
+      - name: Verify formatting (gofmt -l .)
+        run: |
+          test -z "$(gofmt -l .)" || { echo "gofmt found unformatted files:"; gofmt -l .; exit 1; }
+
+      - name: Vet (go vet ./...)
+        run: go vet ./...
+
+      - name: Test (go test ./...)
+        run: go test ./... -count=1

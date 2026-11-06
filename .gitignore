@@ -1,0 +1,25 @@
+# Binaries and build output
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/bin/
+/dist/
+
+# Test binary
+*.test
+*.out
+
+# Coverage
+*.cover
+coverage.txt
+
+# Editor / OS noise
+.idea/
+.vscode/
+.DS_Store
+
+# Local agent-log export (git-ignored; generated at runtime)
+agent-log.jsonl
+/tmp/agent-log/
