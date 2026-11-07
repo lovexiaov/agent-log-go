@@ -139,16 +139,42 @@ Schema v1 的 `trace_id` 只要求"与 traceparent 同源的不透明字符串"�
 
 ## 9. 传输
 
+### 9.1 请求形状
+
 - 每个 OTLP 请求只承载**一种信号**：logs → `POST <collector>/v1/logs`，traces → `POST <collector>/v1/traces`。
 - `Content-Type: application/json`（本规范使用 OTLP/JSON 而非 protobuf，便于零依赖实现）。
-- 适配器输出 `{"logs": ..., "traces": ...}` 两个独立 body，由调用方分别发送；不负责重试/背压（交给 Collector 或调用方的队列）。
+- body 为空（无任何 resource 组，例如只有普通日志、没有操作事件时的 traces）**不发请求**，避免无意义往返。
+- 默认 endpoint `http://localhost:4318`（OTel Collector 的 OTLP/HTTP 端口）；endpoint 末尾多余 `/` 会被归一化。
+
+### 9.2 内置 exporter 与重试策略
+
+适配器只产出 body；把它送上网络的是各端的 **exporter**（Go `agentlog/otlp_http.go`、Python `agentlog/otlp_http.py`）。exporter 刻意做得很小：**不是队列**，不做定时批量、不做磁盘缓冲、不做背压——生产环境应指向本地 Collector，由 Collector 负责持久化。
+
+| 响应 | 处理 |
+| --- | --- |
+| `2xx` | 成功 |
+| `408` / `429` / `5xx` | 可重试，指数退避（默认 base 100ms，逐次翻倍，上限 64×） |
+| 其他 `4xx` | **永久失败**：payload 结构错误或未授权，重试只会放大错误，立即抛出 |
+| 传输层错误（连接拒绝、超时） | 可重试 |
+
+其他约定：
+
+- 默认重试次数 2（共 3 次尝试），默认超时 10s；调用方可调。
+- **顺序**：先 logs 后 traces；遇到永久失败立即中止该批次并抛错，绝不静默丢数据（调用方需要知道丢了）。
+- 导出为**幂等**：同一事件重复导出得到相同 `traceId`/`spanId`（§6），重试不会产生重复链路节点。
+- 脱敏在 logger 层已完成（C6），exporter 不再二次处理隐私数据。
+
+### 9.3 端到端验证
+
+- `tools/otlp-compat-verify/collector.py`：零依赖假 Collector（`http.server`），校验每个 LogRecord/Span 的结构不变量（id 长度与大小写、`timeUnixNano` 为字符串、severityNumber 为整数、span 时间窗不倒挂、resource 含 `service.name`）。可独立起服务（`--expect-records/--expect-spans` 用作 CI 门禁），也可被脚本导入。
+- `tools/otlp-compat-verify/e2e_demo.py`：起 Collector → 真跑 Go 与 Python 示例（`AGENTLOG_OTLP_ENDPOINT` 触发导出）→ 断言收到的记录数、事件类型、span 语义，以及**跨语言同一绑定 span 产出同一组 OTLP id**。
 
 ## 10. 实现状态
 
 | 端 | 状态 | 入口 |
 | --- | --- | --- |
-| Python | ✅ 已实现（v1.0.0；支持 Schema v1.1 `span_id` 透传） | `agentlog/otlp.py`：`to_otlp` / `to_otlp_logs` / `to_otlp_spans` / `event_to_log_record` / `event_to_span` / `OTLPSink` |
-| Go | ✅ 已实现（v1.0.0；支持 `span_id` 透传） | `agentlog/otlp.go`：`ToOTLP` / `ToOTLPLogs` / `ToOTLPSpans` / `EventToLogRecord` / `EventToSpan` / `OTLPSink` |
+| Python | ✅ 适配器 + ✅ exporter（v1.0.0；支持 Schema v1.1 `span_id` 透传） | `agentlog/otlp.py`：`to_otlp` / `to_otlp_logs` / `to_otlp_spans` / `event_to_log_record` / `event_to_span` / `OTLPSink`；`agentlog/otlp_http.py`：`OTLPExporter` |
+| Go | ✅ 适配器 + ✅ exporter（v1.0.0；支持 `span_id` 产出与透传） | `agentlog/otlp.go`：`ToOTLP` / `ToOTLPLogs` / `ToOTLPSpans` / `EventToLogRecord` / `EventToSpan` / `OTLPSink`；`agentlog/otlp_http.go`：`OTLPExporter` |
 | Java | ⬜ 待实现 | — |
 | Web / TS | ⬜ 待实现 | — |
 | Kotlin / Android | ⬜ 待实现 | — |
@@ -156,9 +182,10 @@ Schema v1 的 `trace_id` 只要求"与 traceparent 同源的不透明字符串"�
 
 验证方式：
 
-- 端内单测：Python `tests/test_otlp.py`（36 项，覆盖级别/时区/类型/id/span/分组/sink/资源冲突）；Go `agentlog/otlp_test.go`（25 项，覆盖同一清单 + JSON 可解析性）。
+- 端内单测：Python `tests/test_otlp.py`（36 项，覆盖级别/时区/类型/id/span/分组/sink/资源冲突）+ `tests/test_otlp_http.py`（14 项，覆盖请求形状/重试矩阵/退避/headers/断链）；Go `agentlog/otlp_test.go`（25 项）+ `agentlog/otlp_http_test.go`（11 项）+ `agentlog/span_test.go`（6 项）。
 - 规范对照脚本：`tools/otlp-compat-verify/validate.py`（零依赖，套用真实 `schema/log-event.schema.json` 校验 5 类样例事件）。
-- 跨端一致性抽查：同一输入在 Python 与 Go 两端产出的 `severityNumber`、`traceId`/`spanId` 派生值、span 名称与属性键必须逐字相同（id 派生种子字符串两端一致）。
+- 端到端：`tools/otlp-compat-verify/e2e_demo.py`（真实 HTTP 往返，Go + Python 双端到同一 Collector）。
+- 跨端一致性抽查：同一输入在 Python 与 Go 两端产出的 `severityNumber`、`traceId`/`spanId` 派生值、span 名称与属性键**逐字相同**（id 派生种子字符串两端一致，实测一致；仅 `telemetry.sdk.language`/`version` 因语言而异）。
 
 ## 11. 风险与注意
 

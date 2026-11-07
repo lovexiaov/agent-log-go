@@ -3,9 +3,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 
 	agentlog "github.com/lovexiaov/agent-log-go/agentlog"
 )
@@ -64,11 +66,20 @@ func main() {
 	//    memory, then drain the batch and POST it to an OTLP collector.
 	otlpSink := agentlog.NewOTLPSink(map[string]interface{}{"service.version": "1.0.0"})
 	otlpLogger := agentlog.NewLogger("com.example.demo", otlpSink)
-	otlpLogger.Info("invoice generated", agentlog.WithPayload(map[string]interface{}{"invoice_id": "INV-9"}))
-	otlpLogger.RecordAuto(string(agentlog.EventTypeNetworkRequest), "GET https://api.example.com/orders -> 200",
+
+	// Schema v1.1: binding trace_id + span_id on a child logger makes every event
+	// of the operation share one span — so log lines and the exported OTLP span
+	// carry the same ids and an agent can join them exactly.
+	span := otlpLogger.Child(map[string]interface{}{
+		"trace_id": "0123456789abcdef0123456789abcdef",
+		"span_id":  "a1b2c3d4e5f60718",
+	})
+	span.Info("invoice generated", agentlog.WithPayload(map[string]interface{}{"invoice_id": "INV-9"}))
+	span.RecordAuto(string(agentlog.EventTypeNetworkRequest), "GET https://api.example.com/orders -> 200",
 		agentlog.WithPayload(map[string]interface{}{
 			"method": "GET", "url": "https://api.example.com/orders", "status": 200, "duration_ms": 14,
 		}))
+	// No span_id bound here: the exporter derives a deterministic one.
 	otlpLogger.RecordAuto(string(agentlog.EventTypeDBQuery), "SELECT: orders",
 		agentlog.WithPayload(map[string]interface{}{
 			"operation": "SELECT", "statement": "SELECT * FROM orders WHERE id = ?",
@@ -84,6 +95,18 @@ func main() {
 	tracesBody := agentlog.ToOTLPJSON(batch["traces"])
 	fmt.Printf("OTLP logs body (%d bytes): %.160s...\n", len(logsBody), logsBody)
 	fmt.Printf("OTLP traces body (%d bytes): %.160s...\n", len(tracesBody), tracesBody)
+
+	// End-to-end export: with AGENTLOG_OTLP_ENDPOINT set the same batch is really
+	// POSTed to a collector. Left unset the example stays offline, so CI never
+	// touches the network:
+	//   AGENTLOG_OTLP_ENDPOINT=http://127.0.0.1:4318 go run ./example
+	if endpoint := os.Getenv("AGENTLOG_OTLP_ENDPOINT"); endpoint != "" {
+		if err := agentlog.NewOTLPExporter(endpoint).Export(context.Background(), batch); err != nil {
+			fmt.Println("otlp export error:", err)
+			return
+		}
+		fmt.Println("OTLP exported to", endpoint)
+	}
 
 	fmt.Println("done; see", agentlog.AgentLog.ExportPath())
 }

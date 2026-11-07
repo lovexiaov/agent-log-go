@@ -13,6 +13,7 @@ type Logger struct {
 	env           string
 	category      string
 	traceID       string
+	spanID        string
 	userID        string
 	boundPayload  map[string]interface{}
 }
@@ -46,6 +47,7 @@ type emitInput struct {
 	message   string
 	category  string
 	traceID   string
+	spanID    string
 	userID    string
 	subsystem string
 	env       string
@@ -60,6 +62,10 @@ func WithCategory(c string) Option { return func(e *emitInput) { e.category = c 
 
 // WithTraceID sets a cross-request trace id.
 func WithTraceID(t string) Option { return func(e *emitInput) { e.traceID = t } }
+
+// WithSpanID sets the span this event belongs to (Schema v1.1: 16 hex chars).
+// Invalid values are ignored at serialization time.
+func WithSpanID(id string) Option { return func(e *emitInput) { e.spanID = id } }
 
 // WithUserID binds a user id to the event (lifted to user_id at serialization).
 func WithUserID(u string) Option { return func(e *emitInput) { e.userID = u } }
@@ -81,6 +87,7 @@ func (l *Logger) emit(in emitInput) {
 	env := firstNonEmpty(in.env, l.env)
 	category := firstNonEmpty(in.category, l.category)
 	traceID := firstNonEmpty(in.traceID, l.traceID)
+	spanID := firstNonEmpty(in.spanID, l.spanID)
 
 	// Merge payloads: bound context first, per-call overrides.
 	payload := map[string]interface{}{}
@@ -111,6 +118,7 @@ func (l *Logger) emit(in emitInput) {
 		Env:       env,
 		UserID:    userID,
 		TraceID:   traceID,
+		SpanID:    spanID,
 		Payload:   payload,
 	}
 
@@ -143,6 +151,8 @@ func (l *Logger) Child(ctx map[string]interface{}) *Logger {
 			child.category = toString(v)
 		case "trace_id":
 			child.traceID = toString(v)
+		case "span_id":
+			child.spanID = toString(v)
 		default:
 			child.boundPayload[sk] = v
 		}
@@ -242,6 +252,8 @@ func normalizeReservedKey(k string) string {
 		return "session_id"
 	case "traceId":
 		return "trace_id"
+	case "spanId":
+		return "span_id"
 	case "event":
 		return "event_type"
 	case "category":

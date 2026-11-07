@@ -120,6 +120,25 @@ batch, err := sink.Drain()                    // {"logs": ..., "traces": ...}
 // Content-Type: application/json
 ```
 
+Sending the batch is one call — the exporter handles one-signal-per-request,
+empty-signal skipping, and retries:
+
+```go
+exporter := agentlog.NewOTLPExporter("http://localhost:4318") // OTLP/HTTP default
+if err := exporter.Export(ctx, batch); err != nil {
+    // permanent (4xx) or exhausted retries — surface it, don't swallow it
+}
+// or drain-and-send in one step: exporter.ExportSink(ctx, sink)
+```
+
+Retry policy: `2xx` success; `408`/`429`/`5xx` and transport errors retry with
+exponential backoff (100ms base, doubling, capped at 64×); other `4xx` are
+permanent and fail fast. Defaults: 2 retries, 10s timeout — override via the
+struct fields.
+
+> Tip: the exporter is a transport, not a queue. In production point it at a
+> local Collector, which owns durability and batching.
+
 Mapping summary (authoritative spec: `docs/OTLP-MAPPING.md`):
 
 | agent-log | OTLP |

@@ -32,8 +32,18 @@ All notable changes to this project are documented in this file.
   - no third-party dependency: the adapter reuses the package's own serializer.
 - `Logger.SetSink` — swap the destination of an existing logger (e.g. route the
   shared logger into an `OTLPSink`).
+- **OTLP/HTTP exporter** (`agentlog/otlp_http.go`): `OTLPExporter` puts those
+  batches on the wire (one signal per request, empty signals skipped). Retries
+  `408`/`429`/`5xx` and transport errors with exponential backoff; fails fast on
+  other `4xx`; honours context cancellation.
+- **Schema v1.1 `span_id`**: `LogEvent.SpanID`, `WithSpanID(...)` and
+  `Child({"span_id": ...})`. Malformed values are dropped instead of written, so a
+  bad value can never produce a schema-violating line; the OTLP adapter prefers the
+  bound id over its derived one.
 - `docs/OTLP-MAPPING.md` (spec copy) and an OTLP section in the README.
-- 25 new tests (`agentlog/otlp_test.go`): levels, timestamps/offsets, AnyValue
-  typing, id derivation and `span_id` passthrough, HTTP/DB spans, resource
-  grouping, extra-resource conflict handling, sink drain, JSON validity.
+- 42 new tests: `agentlog/otlp_test.go` (25 — levels, timestamps/offsets, AnyValue
+  typing, id derivation, HTTP/DB spans, resource grouping, sink drain, JSON
+  validity), `agentlog/otlp_http_test.go` (11 — request shape, retry matrix,
+  backoff, headers, cancellation) and `agentlog/span_test.go` (6 — span_id
+  serialization, invalid-value dropping, child binding, OTLP passthrough).
 - Docs (INTERFACE.md, schema), README, CONTRIBUTING, LICENSE (MIT), CI workflow.

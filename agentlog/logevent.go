@@ -19,6 +19,7 @@ type LogEvent struct {
 	Env       string
 	UserID    string
 	TraceID   string
+	SpanID    string
 
 	// Payload holds all non-reserved fields, already redacted.
 	Payload map[string]interface{}
@@ -51,6 +52,11 @@ func (e LogEvent) ToJSONLine() string {
 	}
 	if e.TraceID != "" {
 		m["trace_id"] = e.TraceID
+	}
+	// Schema v1.1: an invalid span_id is dropped rather than written, so a bad
+	// value can never produce a line that violates the schema.
+	if normalized := NormalizeSpanID(e.SpanID); normalized != "" {
+		m["span_id"] = normalized
 	}
 	if len(e.Payload) > 0 {
 		m["payload"] = e.Payload
