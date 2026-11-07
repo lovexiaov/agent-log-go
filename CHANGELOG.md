@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented in this file.
 
-## [1.1.0] - 2026-11-07
+## [1.2.0] - 2026-11-07
 
 ### Changed（Schema v1.2，破坏性）
 
