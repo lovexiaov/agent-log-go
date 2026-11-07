@@ -80,7 +80,7 @@ func TestDBQueryAuto(t *testing.T) {
 		"ts": true, "level": true, "service": true, "event_type": true,
 		"session_id": true, "agent_auto": true, "message": true,
 		"subsystem": true, "category": true, "env": true, "user_id": true,
-		"trace_id": true, "payload": true,
+		"trace_id": true, "span_id": true, "payload": true,
 	}
 	for i, line := range lines {
 		var L map[string]interface{}
@@ -105,7 +105,7 @@ func TestDBQueryAuto(t *testing.T) {
 		if !ok {
 			t.Fatalf("line %d: payload missing or not an object", i)
 		}
-		for _, key := range []string{"operation", "query", "duration_ms", "rows_affected"} {
+		for _, key := range []string{"operation", "statement", "duration_ms", "rows_affected"} {
 			if _, present := p[key]; !present {
 				t.Fatalf("line %d: payload missing %q: %v", i, key, p)
 			}

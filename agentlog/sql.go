@@ -81,16 +81,19 @@ func (d *DB) record(operation, query string, dur time.Duration, err error, rowsA
 // RecordDBQuery is a convenience helper for databases/drivers not covered by
 // WrapDB. Call it after running a query to emit a db_query auto-event without
 // wrapping *sql.DB.
-func RecordDBQuery(operation, query string, durationMs int64, rowsAffected int64, err error) {
+//
+// The payload uses the cross-SDK vocabulary: "statement" for the SQL text,
+// "operation", "duration_ms", "rows_affected" and "error".
+func RecordDBQuery(operation, statement string, durationMs int64, rowsAffected int64, err error) {
 	payload := map[string]interface{}{
 		"operation":     operation,
-		"query":         query,
+		"statement":     statement,
 		"duration_ms":   durationMs,
 		"rows_affected": rowsAffected,
 		"error":         errString(err),
 	}
 	AgentLog.RecordAuto(string(EventTypeDBQuery),
-		fmt.Sprintf("%s: %s", operation, query),
+		fmt.Sprintf("%s: %s", operation, statement),
 		WithPayload(payload))
 }
 

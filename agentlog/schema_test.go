@@ -45,7 +45,7 @@ func TestSchemaConformance(t *testing.T) {
 		"ts": true, "level": true, "service": true, "event_type": true,
 		"session_id": true, "agent_auto": true, "message": true,
 		"subsystem": true, "category": true, "env": true, "user_id": true,
-		"trace_id": true, "payload": true,
+		"trace_id": true, "span_id": true, "payload": true,
 	}
 
 	for i, line := range lines {

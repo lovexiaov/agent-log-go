@@ -2,8 +2,8 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/lovexiaov/ai-dev-spec/docs/logging-framework/schema/log-event.schema.json",
   "title": "AgentLogEvent",
-  "description": "面向 Agent 的统一结构化日志事件 —— Schema v1 线格式。所有端（Web / macOS / 服务端 / 未来新增端）输出的每一条 JSONL 都必须满足本 schema。语言内部命名（camelCase 属性名）不受约束，只在序列化边界做映射。",
-  "version": "1.0.0",
+  "description": "面向 Agent 的统一结构化日志事件 —— Schema v1 线格式。所有端（Web / macOS / 服务端 / 未来新增端）输出的每一条 JSONL 都必须满足本 schema。语言内部命名（camelCase 属性名）不受约束，只在序列化边界做映射。v1.1 为向后兼容增量：新增可选顶层字段 span_id，不改变任何既有字段的语义与必填约束。",
+  "version": "1.1.0",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -45,6 +45,11 @@
     "trace_id": {
       "type": "string",
       "description": "跨端 / 跨请求追踪 id，与 HTTP traceparent 同源，用于把多端日志串成一条链路。"
+    },
+    "span_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{16}$",
+      "description": "当前操作跨度的标识（v1.1 新增，可选）。16 位小写十六进制（8 字节），与 W3C traceparent 的 span-id 同构，需与 trace_id 配合使用。由埋点方在操作开始时生成；未提供时导出端（如 OTLP 适配器）可自行派生。"
     },
     "agent_auto": {
       "type": "boolean",

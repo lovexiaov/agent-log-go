@@ -19,6 +19,7 @@
 - 调用侧仍可用 camelCase 书写（`event` / `traceId` / `userId`），由 logger 在**序列化边界**映射为 snake_case 线格式。
 - 非保留键（如业务字段 `amount`、`orderId`）MUST 进入 `payload` 对象，不得泄漏到顶层。
 - 脱敏 MUST 在 logger 层拦截，不依赖调用方自觉。
+- 链路标识：`trace_id`（可选）串联一次请求链路；`span_id`（v1.1 可选）标识其中的**一次操作**（如一次 HTTP 调用 / 一次 DB 查询）。若产出 `span_id`，MUST 为 16 位小写十六进制（8 字节，与 W3C `traceparent` 的 span-id 同构），且 SHOULD 与该链路已有的 `trace_id` 一并写出；无法取得 `trace_id` 时可省略两者，由读取/导出端决定是否派生。
 
 ## 3. Level 词表（与 Schema v1 一致）
 
