@@ -53,5 +53,10 @@ func main() {
 		panic("demo boom")
 	})
 
+	// 7) DB auto-instrumentation (event_type = db_query). In production wrap your
+	//    *sql.DB with agentlog.WrapDB(db) so every Query/Exec is recorded; here we
+	//    emit one directly with no real database.
+	agentlog.RecordDBQuery("exec", "INSERT INTO orders(user_id) VALUES ('u-1234')", 3, 1, nil)
+
 	fmt.Println("done; see", agentlog.AgentLog.ExportPath())
 }

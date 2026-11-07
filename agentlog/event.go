@@ -17,6 +17,7 @@ const (
 	EventTypeNetworkRequest EventType = "network_request"
 	EventTypeCrash          EventType = "crash"
 	EventTypeHang           EventType = "hang"
+	EventTypeDBQuery        EventType = "db_query"
 	EventTypeLog            EventType = "log"
 )
 
