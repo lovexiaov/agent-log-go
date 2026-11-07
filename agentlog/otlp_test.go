@@ -171,22 +171,12 @@ func TestTraceIDHex(t *testing.T) {
 		t.Errorf("hex trace id = %q", got)
 	}
 
-	// Anything else is hashed deterministically into a 32-hex id.
-	event["trace_id"] = "trace_abc"
-	first := TraceIDHex(event)
-	second := TraceIDHex(event)
-	if first != second {
-		t.Fatalf("hashed trace id is not deterministic: %q vs %q", first, second)
-	}
-	if len(first) != 32 {
-		t.Errorf("hashed trace id length = %d", len(first))
-	}
-
-	// Two events sharing a logical trace id land in the same OTLP trace.
-	other := baseEvent("log", LevelInfo)
-	other["trace_id"] = "trace_abc"
-	if TraceIDHex(other) != first {
-		t.Errorf("same trace_id produced different ids")
+	// Schema v1.2: anything else is rejected — no hashing, no id invention.
+	for _, bad := range []interface{}{"trace_abc", "0123456789abcdef0123456789abcde", 42} {
+		event["trace_id"] = bad
+		if got := TraceIDHex(event); got != "" {
+			t.Errorf("non-hex trace_id %v -> %q, want empty", bad, got)
+		}
 	}
 
 	delete(event, "trace_id")

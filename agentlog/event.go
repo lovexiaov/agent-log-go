@@ -2,6 +2,7 @@ package agentlog
 
 import (
 	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"runtime"
@@ -43,24 +44,31 @@ func isValidEventType(s string) bool {
 var globalSessionID string
 
 func init() {
-	globalSessionID = newUUID()
+	globalSessionID = newHex32()
 }
 
 // SessionID returns the process-wide stable session id.
+//
+// Generated ids are 32 lowercase hex chars, so the natural binding
+// trace_id = session_id is always a Schema v1.2-valid trace id.
 func SessionID() string {
 	return globalSessionID
 }
 
-// newUUID returns a RFC4122 v4 UUID string, generated with crypto/rand.
-func newUUID() string {
+// NewTraceID returns a fresh Schema v1.2 trace id: 32 lowercase hex chars
+// (crypto/rand, uuid4-shaped without hyphens).
+func NewTraceID() string {
+	return newHex32()
+}
+
+// newHex32 returns 16 random bytes as 32 lowercase hex chars.
+func newHex32() string {
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {
 		// extremely unlikely fallback
-		return fmt.Sprintf("%016x", time.Now().UnixNano())
+		return fmt.Sprintf("%032x", time.Now().UnixNano())
 	}
-	b[6] = (b[6] & 0x0f) | 0x40
-	b[8] = (b[8] & 0x3f) | 0x80
-	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
+	return hex.EncodeToString(b)
 }
 
 // InstallPanicHandler runs fn and, should it panic, records a crash auto-event

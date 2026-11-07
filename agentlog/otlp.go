@@ -321,20 +321,34 @@ func NormalizeSpanID(s string) string {
 	return strings.ToLower(s)
 }
 
-// TraceIDHex returns the 32-hex OTLP traceId for an event, or "".
-//
-// Schema v1 only requires trace_id to be opaque and traceparent-aligned, so a
-// 32-hex value is used verbatim while anything else is hashed deterministically:
-// events sharing one logical trace_id still land in the same OTLP trace.
-func TraceIDHex(event map[string]interface{}) string {
-	raw := strings.TrimSpace(asString(event["trace_id"]))
-	if raw == "" {
+// NormalizeTraceID returns the lowercase 32-hex trace id, or "" when the input
+// is not a valid Schema v1.2 trace_id (8 bytes, W3C traceparent trace-id shape).
+func NormalizeTraceID(s string) string {
+	s = strings.TrimSpace(s)
+	if len(s) != 32 {
 		return ""
 	}
-	if isHex32(raw) {
-		return strings.ToLower(raw)
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		switch {
+		case c >= '0' && c <= '9':
+		case c >= 'a' && c <= 'f':
+		case c >= 'A' && c <= 'F':
+		default:
+			return ""
+		}
 	}
-	return sha256Hex("agentlog:trace:" + raw)[:32]
+	return strings.ToLower(s)
+}
+
+// TraceIDHex returns the 32-hex OTLP traceId for an event, or "".
+//
+// Schema v1.2 constrains trace_id to 32 lowercase hex chars (uppercase is
+// normalized). Non-conforming values yield "" — no hashing: since v1.2 the
+// write boundary drops them, so reaching this adapter they can only come from
+// hand-built maps; those are treated as trace-less too.
+func TraceIDHex(event map[string]interface{}) string {
+	return NormalizeTraceID(asString(event["trace_id"]))
 }
 
 // SpanIDHex returns the 16-hex OTLP spanId for an event.
@@ -365,23 +379,6 @@ func spanTraceID(event map[string]interface{}) string {
 		return resolved
 	}
 	return sha256Hex("agentlog:session:" + asString(event["session_id"]))[:32]
-}
-
-func isHex32(s string) bool {
-	if len(s) != 32 {
-		return false
-	}
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		switch {
-		case c >= '0' && c <= '9':
-		case c >= 'a' && c <= 'f':
-		case c >= 'A' && c <= 'F':
-		default:
-			return false
-		}
-	}
-	return true
 }
 
 // --------------------------------------------------------------------------- //

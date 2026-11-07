@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.1.0] - 2026-11-07
+
+### Changed（Schema v1.2，破坏性）
+
+- `trace_id` 收紧为 **32 位小写 hex**（8 字节，与 OTLP `traceId` / W3C traceparent
+  trace-id 同构）。大写自动归一；非法值在序列化边界**丢弃该字段、事件照写**，与
+  `span_id` 策略一致。适配器不再对非 hex 值做 `sha256("agentlog:trace:"+raw)` 派生。
+  发布时尚无生产使用方（Schema v1.2 描述内已注明）。
+- session id 默认生成值改为 32 位小写 hex：`trace_id = session_id` 这个最自然的
+  绑定永远合法。
+
+### Added
+
+- `newTraceId()`：生成 Schema 合法的 trace id（uuid4 去横线）。
+
 ## [1.0.0] - 2026-11-07
 
 ### Added

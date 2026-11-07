@@ -50,8 +50,11 @@ func (e LogEvent) ToJSONLine() string {
 	if e.UserID != "" {
 		m["user_id"] = e.UserID
 	}
-	if e.TraceID != "" {
-		m["trace_id"] = e.TraceID
+	// Schema v1.2: an invalid trace_id is dropped rather than written (the
+	// event itself is kept), same policy as span_id below. Uppercase hex is
+	// normalized to lowercase.
+	if normalized := NormalizeTraceID(e.TraceID); normalized != "" {
+		m["trace_id"] = normalized
 	}
 	// Schema v1.1: an invalid span_id is dropped rather than written, so a bad
 	// value can never produce a line that violates the schema.

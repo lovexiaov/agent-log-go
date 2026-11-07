@@ -2,8 +2,8 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/lovexiaov/ai-dev-spec/docs/logging-framework/schema/log-event.schema.json",
   "title": "AgentLogEvent",
-  "description": "面向 Agent 的统一结构化日志事件 —— Schema v1 线格式。所有端（Web / macOS / 服务端 / 未来新增端）输出的每一条 JSONL 都必须满足本 schema。语言内部命名（camelCase 属性名）不受约束，只在序列化边界做映射。v1.1 为向后兼容增量：新增可选顶层字段 span_id，不改变任何既有字段的语义与必填约束。",
-  "version": "1.1.0",
+  "description": "面向 Agent 的统一结构化日志事件 —— Schema v1 线格式。所有端（Web / macOS / 服务端 / 未来新增端）输出的每一条 JSONL 都必须满足本 schema。语言内部命名（camelCase 属性名）不受约束，只在序列化边界做映射。v1.1 为向后兼容增量：新增可选顶层字段 span_id，不改变任何既有字段的语义与必填约束。v1.2 收紧 trace_id：必须为 32 位小写十六进制（8 字节，与 OTLP traceId 同构），大写自动归一，非法值在写入边界丢弃（事件本身照写）——此为破坏性变更，发布时尚无生产使用方。",
+  "version": "1.2.0",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -44,7 +44,8 @@
     },
     "trace_id": {
       "type": "string",
-      "description": "跨端 / 跨请求追踪 id，与 HTTP traceparent 同源，用于把多端日志串成一条链路。"
+      "pattern": "^[0-9a-f]{32}$",
+      "description": "跨端 / 跨请求追踪 id（v1.2 收紧）：32 位小写十六进制（8 字节），与 OTLP traceId / W3C traceparent 的 trace-id 同构。大写输入自动归一为小写；其他任何值在写入边界丢弃该字段，事件本身照写（视同未提供 trace）。可由 SDK 的 newTraceId() 生成，或直接复用 session_id（默认即 32 位 hex）。"
     },
     "span_id": {
       "type": "string",
