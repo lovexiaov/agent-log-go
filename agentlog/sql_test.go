@@ -20,13 +20,13 @@ func (mockDriver) Open(name string) (driver.Conn, error) { return mockConn{}, ni
 type mockConn struct{}
 
 func (mockConn) Prepare(query string) (driver.Stmt, error) { return mockStmt{}, nil }
-func (mockConn) Close() error                             { return nil }
-func (mockConn) Begin() (driver.Tx, error)                { return mockTx{}, nil }
+func (mockConn) Close() error                              { return nil }
+func (mockConn) Begin() (driver.Tx, error)                 { return mockTx{}, nil }
 
 type mockStmt struct{}
 
-func (mockStmt) Close() error                              { return nil }
-func (mockStmt) NumInput() int                             { return -1 }
+func (mockStmt) Close() error  { return nil }
+func (mockStmt) NumInput() int { return -1 }
 func (mockStmt) Exec(args []driver.Value) (driver.Result, error) {
 	return mockResult{}, nil
 }
@@ -47,7 +47,7 @@ func (mockResult) RowsAffected() (int64, error) { return 3, nil }
 type mockRows struct{}
 
 func (mockRows) Columns() []string              { return []string{"id"} }
-func (mockRows) Close() error                  { return nil }
+func (mockRows) Close() error                   { return nil }
 func (mockRows) Next(dest []driver.Value) error { return io.EOF }
 
 func TestDBQueryAuto(t *testing.T) {
