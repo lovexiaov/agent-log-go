@@ -94,6 +94,47 @@ agentlog.AgentLog.RecordAuto(agentlog.EventTypeNetworkRequest, "GET /x -> 200",
 
 - `FileSink` — appends JSONL to `<exportDirectory>/agent-log.jsonl` (default: `<tmpdir>/agent-log`).
 - `MemorySink` — in-memory slice, for tests (`Lines()`, `LineCount()`).
+- `OTLPSink` — buffers lines and renders them as OTLP/JSON batches (see below).
+
+## OTLP export (OpenTelemetry)
+
+`agentlog/otlp.go` translates Schema v1 events into **OTLP/JSON**, so any
+OTLP-compatible backend (Jaeger / Tempo / Loki / Grafana / Datadog …) can ingest
+agent-log output through a Collector. It is export-only: the wire format is
+unchanged and no OTel SDK is pulled in — the package stays standard-library only.
+
+```go
+sink := agentlog.NewOTLPSink(map[string]interface{}{"service.version": "1.2.3"})
+logger := agentlog.NewLogger("com.example.demo", sink)
+// (or route the shared logger: agentlog.AgentLog.Shared().SetSink(sink))
+
+logger.Info("invoice generated", agentlog.WithPayload(map[string]interface{}{"invoice_id": "INV-9"}))
+logger.RecordAuto(string(agentlog.EventTypeNetworkRequest), "GET https://api.example.com/orders -> 200",
+    agentlog.WithPayload(map[string]interface{}{
+        "method": "GET", "url": "https://api.example.com/orders", "status": 200, "duration_ms": 14,
+    }))
+
+batch, err := sink.Drain()                    // {"logs": ..., "traces": ...}
+// POST agentlog.ToOTLPJSON(batch["logs"])   to <collector>/v1/logs
+// POST agentlog.ToOTLPJSON(batch["traces"]) to <collector>/v1/traces
+// Content-Type: application/json
+```
+
+Mapping summary (authoritative spec: `docs/OTLP-MAPPING.md`):
+
+| agent-log | OTLP |
+| --- | --- |
+| every event | one `LogRecord` in the logs signal |
+| `network_request` | + one `SPAN_KIND_CLIENT` span (HTTP semconv) |
+| `db_query` | + one `SPAN_KIND_CLIENT` span (DB semconv) |
+| `crash` / `hang` | `LogRecord` with `exception.*` attributes, no span |
+| `level` | `severityText` / `severityNumber` (`critical` → `FATAL`/21) |
+| `payload.<k>` | attribute `payload.<k>` (flattened one level) |
+| `trace_id` / `span_id` | `traceId` / `spanId` (deterministic derivation when absent) |
+
+`OTLPSink` stores lines exactly as written, so redaction (C6) and the min-level
+filter have already been applied by the logger — the exporter never re-processes
+privacy-sensitive data.
 
 ## API surface (facade `agentlog.AgentLog`)
 

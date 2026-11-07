@@ -165,6 +165,14 @@ func (l *Logger) SessionID() string {
 	return l.sessionID
 }
 
+// SetSink swaps the destination of already-redacted JSONL lines, e.g. to route
+// the shared logger through an OTLPSink. A nil sink is ignored.
+func (l *Logger) SetSink(sink Sink) {
+	if sink != nil {
+		l.sink = sink
+	}
+}
+
 // ExportPath returns the sink's path.
 func (l *Logger) ExportPath() string {
 	return l.sink.Path()

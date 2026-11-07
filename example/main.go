@@ -58,5 +58,32 @@ func main() {
 	//    emit one directly with no real database.
 	agentlog.RecordDBQuery("exec", "INSERT INTO orders(user_id) VALUES ('u-1234')", 3, 1, nil)
 
+	// 8) OTLP export (D3 / OTel alignment): the adapter translates Schema v1
+	//    events into OTLP/JSON — one LogRecord each, plus a CLIENT span for
+	//    network_request / db_query. Wire it as a sink to capture events in
+	//    memory, then drain the batch and POST it to an OTLP collector.
+	otlpSink := agentlog.NewOTLPSink(map[string]interface{}{"service.version": "1.0.0"})
+	otlpLogger := agentlog.NewLogger("com.example.demo", otlpSink)
+	otlpLogger.Info("invoice generated", agentlog.WithPayload(map[string]interface{}{"invoice_id": "INV-9"}))
+	otlpLogger.RecordAuto(string(agentlog.EventTypeNetworkRequest), "GET https://api.example.com/orders -> 200",
+		agentlog.WithPayload(map[string]interface{}{
+			"method": "GET", "url": "https://api.example.com/orders", "status": 200, "duration_ms": 14,
+		}))
+	otlpLogger.RecordAuto(string(agentlog.EventTypeDBQuery), "SELECT: orders",
+		agentlog.WithPayload(map[string]interface{}{
+			"operation": "SELECT", "statement": "SELECT * FROM orders WHERE id = ?",
+			"db_system": "postgresql", "duration_ms": 3,
+		}))
+
+	batch, err := otlpSink.Drain()
+	if err != nil {
+		fmt.Println("otlp drain error:", err)
+		return
+	}
+	logsBody := agentlog.ToOTLPJSON(batch["logs"])
+	tracesBody := agentlog.ToOTLPJSON(batch["traces"])
+	fmt.Printf("OTLP logs body (%d bytes): %.160s...\n", len(logsBody), logsBody)
+	fmt.Printf("OTLP traces body (%d bytes): %.160s...\n", len(tracesBody), tracesBody)
+
 	fmt.Println("done; see", agentlog.AgentLog.ExportPath())
 }
