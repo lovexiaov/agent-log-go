@@ -539,6 +539,39 @@ func TestBatchGroupsByResource(t *testing.T) {
 	}
 }
 
+func TestReleaseMapsToServiceVersion(t *testing.T) {
+	event := baseEvent("log", LevelInfo)
+	event["release"] = "1.4.2"
+	logs, err := ToOTLPLogs([]interface{}{event}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resource := logs["resourceLogs"].([]interface{})[0].(map[string]interface{})["resource"].(map[string]interface{})
+	if got := stringAttr(t, resource["attributes"], "service.version"); got != "1.4.2" {
+		t.Errorf("service.version = %q, want 1.4.2", got)
+	}
+}
+
+func TestBuiltinServiceVersionWinsOverExtra(t *testing.T) {
+	event := baseEvent("log", LevelInfo)
+	event["release"] = "1.4.2"
+	logs, err := ToOTLPLogs([]interface{}{event}, map[string]interface{}{"service.version": "9.9.9"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resource := logs["resourceLogs"].([]interface{})[0].(map[string]interface{})["resource"].(map[string]interface{})
+	seen := map[string]int{}
+	for _, item := range resource["attributes"].([]interface{}) {
+		seen[item.(map[string]interface{})["key"].(string)]++
+	}
+	if seen["service.version"] != 1 {
+		t.Fatalf("service.version duplicated: %d", seen["service.version"])
+	}
+	if got := stringAttr(t, resource["attributes"], "service.version"); got != "1.4.2" {
+		t.Errorf("builtin service.version should win, got %q", got)
+	}
+}
+
 func TestBatchSkipsGroupsWithoutSpans(t *testing.T) {
 	operation := baseEvent(string(EventTypeNetworkRequest), LevelInfo)
 	operation["payload"] = map[string]interface{}{"method": "GET", "url": "https://x.example/a"}

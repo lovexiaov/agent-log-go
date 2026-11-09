@@ -2,8 +2,8 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/lovexiaov/ai-dev-spec/docs/logging-framework/schema/log-event.schema.json",
   "title": "AgentLogEvent",
-  "description": "面向 Agent 的统一结构化日志事件 —— Schema v1 线格式。所有端（Web / macOS / 服务端 / 未来新增端）输出的每一条 JSONL 都必须满足本 schema。语言内部命名（camelCase 属性名）不受约束，只在序列化边界做映射。v1.1 为向后兼容增量：新增可选顶层字段 span_id，不改变任何既有字段的语义与必填约束。v1.2 收紧 trace_id：必须为 32 位小写十六进制（8 字节，与 OTLP traceId 同构），大写自动归一，非法值在写入边界丢弃（事件本身照写）——此为破坏性变更，发布时尚无生产使用方。",
-  "version": "1.2.0",
+  "description": "面向 Agent 的统一结构化日志事件 —— Schema v1 线格式。所有端（Web / macOS / 服务端 / 未来新增端）输出的每一条 JSONL 都必须满足本 schema。语言内部命名（camelCase 属性名）不受约束，只在序列化边界做映射。v1.1 为向后兼容增量：新增可选顶层字段 span_id，不改变任何既有字段的语义与必填约束。v1.2 收紧 trace_id：必须为 32 位小写十六进制（8 字节，与 OTLP traceId 同构），大写自动归一，非法值在写入边界丢弃（事件本身照写）——此为破坏性变更，发布时尚无生产使用方。v1.3 为向后兼容增量：新增可选顶层字段 release（发布标识），不改变任何既有字段语义与必填约束。",
+  "version": "1.3.0",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -71,6 +71,11 @@
     "env": {
       "type": "string",
       "description": "运行环境，如 dev / staging / prod。"
+    },
+    "release": {
+      "type": "string",
+      "maxLength": 128,
+      "description": "发布标识（v1.3 新增，可选）：如 semver / git sha / build number。由配置在 emit 时统一盖章；用于下游按版本聚合与回归追踪。缺省时不写该键。"
     },
     "user_id": {
       "type": "string",

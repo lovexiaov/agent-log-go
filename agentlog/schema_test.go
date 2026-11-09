@@ -44,7 +44,7 @@ func TestSchemaConformance(t *testing.T) {
 	allowedKeys := map[string]bool{
 		"ts": true, "level": true, "service": true, "event_type": true,
 		"session_id": true, "agent_auto": true, "message": true,
-		"subsystem": true, "category": true, "env": true, "user_id": true,
+		"subsystem": true, "category": true, "env": true, "release": true, "user_id": true,
 		"trace_id": true, "span_id": true, "payload": true,
 	}
 
@@ -207,5 +207,60 @@ func TestSchemaConformanceDebugVisible(t *testing.T) {
 	lines := mem.Lines()
 	if len(lines) != 2 {
 		t.Fatalf("expected 2 lines at trace level, got %d", len(lines))
+	}
+}
+
+// TestReleaseStampedOnEvents verifies Schema v1.3 release stamping at the
+// logger level: both manual and auto events carry it.
+func TestReleaseStampedOnEvents(t *testing.T) {
+	mem := NewMemorySink()
+	logger := NewLogger("svc", mem)
+	logger.SetRelease("1.4.2+sha.abc")
+
+	logger.Info("manual with release")
+	logger.RecordAuto(string(EventTypeCrash), "auto with release",
+		WithPayload(map[string]interface{}{"mechanism": "uncaught"}))
+
+	lines := mem.Lines()
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 lines, got %d", len(lines))
+	}
+	for i, line := range lines {
+		var L map[string]interface{}
+		if err := json.Unmarshal([]byte(line), &L); err != nil {
+			t.Fatalf("line %d: invalid JSON: %v", i, err)
+		}
+		if L["release"] != "1.4.2+sha.abc" {
+			t.Fatalf("line %d: release not stamped: %#v", i, L)
+		}
+	}
+}
+
+func TestReleaseAbsentWhenNotConfigured(t *testing.T) {
+	mem := NewMemorySink()
+	logger := NewLogger("svc", mem)
+	logger.Info("no release")
+
+	var L map[string]interface{}
+	if err := json.Unmarshal([]byte(mem.Lines()[0]), &L); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+	if _, ok := L["release"]; ok {
+		t.Fatalf("release must be absent when not configured: %#v", L)
+	}
+}
+
+func TestReleaseTooLongDropped(t *testing.T) {
+	mem := NewMemorySink()
+	logger := NewLogger("svc", mem)
+	logger.SetRelease(strings.Repeat("x", 200))
+	logger.Info("long release")
+
+	var L map[string]interface{}
+	if err := json.Unmarshal([]byte(mem.Lines()[0]), &L); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+	if _, ok := L["release"]; ok {
+		t.Fatalf("too-long release must be dropped: %#v", L)
 	}
 }

@@ -10,6 +10,7 @@ import (
 type LoggingConfig struct {
 	Service         string
 	Env             string
+	Release         string
 	Level           Level
 	RedactEnabled   bool
 	RedactPaths     []string
@@ -49,6 +50,9 @@ func (c LoggingConfig) FromJSON(s string) (LoggingConfig, error) {
 	if c.Env != "" {
 		cfg.Env = c.Env
 	}
+	if c.Release != "" {
+		cfg.Release = c.Release
+	}
 	if c.Level != "" {
 		cfg.Level = c.Level
 	}
@@ -61,6 +65,9 @@ func (c LoggingConfig) FromJSON(s string) (LoggingConfig, error) {
 	}
 	if ev, ok := obj["env"].(string); ok {
 		cfg.Env = ev
+	}
+	if rv, ok := obj["release"].(string); ok && rv != "" {
+		cfg.Release = rv
 	}
 	if lv, ok := obj["level"].(string); ok && lv != "" {
 		cfg.Level = LevelFromName(lv)

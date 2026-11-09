@@ -89,9 +89,11 @@ func InstallPanicHandler(fn func()) {
 func RecordAutoCrash(recovered interface{}, stack []byte) {
 	AgentLog.RecordAuto(string(EventTypeCrash), "panic recovered",
 		WithPayload(map[string]interface{}{
-			"thread":    "main",
-			"exception": fmt.Sprintf("%v", recovered),
-			"stack":     string(stack),
+			"thread":            "main",
+			"exception":         fmt.Sprintf("%v", recovered),
+			"exception_message": fmt.Sprintf("%v", recovered),
+			"stack":             string(stack),
+			"mechanism":         "uncaught",
 		}),
 	)
 }

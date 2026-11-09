@@ -82,6 +82,19 @@ func TestConfigFromJSONInvalid(t *testing.T) {
 	}
 }
 
+func TestConfigRelease(t *testing.T) {
+	cfg, err := DefaultLoggingConfig().FromJSON(`{"release":"2.0.0+abc"}`)
+	if err != nil {
+		t.Fatalf("FromJSON error: %v", err)
+	}
+	if cfg.Release != "2.0.0+abc" {
+		t.Fatalf("release = %q", cfg.Release)
+	}
+	if DefaultLoggingConfig().Release != "" {
+		t.Fatalf("release should default to empty")
+	}
+}
+
 func TestParserRoundTrip(t *testing.T) {
 	// Exercise the hand-rolled parser with nested structures.
 	s := `{"a":1,"b":2.5,"c":true,"d":null,"e":["x",{"f":3}],"g":"he said \"hi\""}`

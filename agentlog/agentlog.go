@@ -52,6 +52,9 @@ func Bootstrap(config LoggingConfig) {
 	if config.Env != "" {
 		logger.env = config.Env
 	}
+	if config.Release != "" {
+		logger.release = config.Release
+	}
 	shared = logger
 }
 

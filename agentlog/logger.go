@@ -11,6 +11,7 @@ type Logger struct {
 	sessionID     string
 	subsystem     string
 	env           string
+	release       string
 	category      string
 	traceID       string
 	spanID        string
@@ -116,6 +117,7 @@ func (l *Logger) emit(in emitInput) {
 		Subsystem: subsystem,
 		Category:  category,
 		Env:       env,
+		Release:   l.release,
 		UserID:    userID,
 		TraceID:   traceID,
 		SpanID:    spanID,
@@ -163,6 +165,12 @@ func (l *Logger) Child(ctx map[string]interface{}) *Logger {
 // SetLevel sets the minimum output level (manual events only; auto always logged).
 func (l *Logger) SetLevel(level Level) {
 	l.minLevel = level
+}
+
+// SetRelease sets the release identifier stamped on every subsequent event
+// (Schema v1.3). An empty value disables the release field.
+func (l *Logger) SetRelease(release string) {
+	l.release = release
 }
 
 // Redact appends sensitive paths to the redactor. Default keys are never removed.

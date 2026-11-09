@@ -51,6 +51,7 @@ const otlpScopeName = "agentlog.otlp"
 // they are centralized here so a semconv revision only touches one place.
 const (
 	semconvServiceName     = "service.name"
+	semconvServiceVersion  = "service.version"
 	semconvDeploymentEnv   = "deployment.environment"
 	semconvSessionID       = "session.id"
 	semconvEnduserID       = "enduser.id"
@@ -414,6 +415,11 @@ func resourceAttributes(event map[string]interface{}, extraResource map[string]i
 	if env := asString(event["env"]); env != "" {
 		attrs = append(attrs, ToOTLPKeyValue(semconvDeploymentEnv, env))
 		seen[semconvDeploymentEnv] = true
+	}
+	if release := asString(event["release"]); release != "" {
+		// Schema v1.3: release -> OTel service.version.
+		attrs = append(attrs, ToOTLPKeyValue(semconvServiceVersion, release))
+		seen[semconvServiceVersion] = true
 	}
 	if sessionID := asString(event["session_id"]); sessionID != "" {
 		attrs = append(attrs, ToOTLPKeyValue(semconvSessionID, sessionID))

@@ -179,6 +179,12 @@ func TestInstallPanicHandler(t *testing.T) {
 	if !contains(line, "boom") {
 		t.Fatalf("crash payload should contain exception: %s", line)
 	}
+	if !contains(line, `"mechanism":"uncaught"`) {
+		t.Fatalf("crash payload must carry mechanism=uncaught: %s", line)
+	}
+	if !contains(line, `"exception_message":"boom"`) {
+		t.Fatalf("crash payload must carry exception_message: %s", line)
+	}
 	_ = recovered
 }
 

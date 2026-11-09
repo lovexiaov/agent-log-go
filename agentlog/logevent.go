@@ -17,6 +17,7 @@ type LogEvent struct {
 	Subsystem string
 	Category  string
 	Env       string
+	Release   string
 	UserID    string
 	TraceID   string
 	SpanID    string
@@ -46,6 +47,11 @@ func (e LogEvent) ToJSONLine() string {
 	}
 	if e.Env != "" {
 		m["env"] = e.Env
+	}
+	// Schema v1.3: optional release identifier; a too-long value is dropped
+	// rather than written as schema-invalid data.
+	if e.Release != "" && len(e.Release) <= 128 {
+		m["release"] = e.Release
 	}
 	if e.UserID != "" {
 		m["user_id"] = e.UserID

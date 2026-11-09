@@ -179,6 +179,7 @@ Options: `WithCategory`, `WithTraceID`, `WithUserID`, `WithSubsystem`, `WithEnv`
 | --- | --- | --- |
 | `service` | `"app"` | required-ish, non-empty |
 | `env` | `""` | |
+| `release` | `""` | Schema v1.3；发布标识（semver / git sha / build number），≤128 字符，盖章到每条事件；OTLP 侧映射为 `service.version` |
 | `level` | `"info"` | `warning`→`warn` |
 | `redactEnabled` | `true` | |
 | `redactPaths` | `[]` | appended to defaults |

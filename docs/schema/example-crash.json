@@ -1,0 +1,21 @@
+{
+  "ts": "2026-11-02T13:38:05.004Z",
+  "level": "critical",
+  "service": "com.yourapp.agent",
+  "subsystem": "agent.crash",
+  "category": "crash",
+  "event_type": "crash",
+  "session_id": "8f14e45fea0a4c1b9c3e0d5b2c7a9e11",
+  "trace_id": "3f9a1c2b7d4e4a5b8c9d0e1f2a3b4c5d",
+  "span_id": "b2c3d4e5f6071829",
+  "agent_auto": true,
+  "message": "uncaught exception in checkout flow",
+  "env": "prod",
+  "release": "1.4.2",
+  "payload": {
+    "exception": "java.lang.NullPointerException",
+    "exception_message": "Attempt to invoke virtual method on a null object reference",
+    "stack": "java.lang.NullPointerException: Attempt to invoke virtual method on a null object reference\n\tat com.yourapp.checkout.Cart.total(Cart.java:42)\n\tat com.yourapp.checkout.Screen.onPay(Screen.java:88)",
+    "mechanism": "uncaught"
+  }
+}
