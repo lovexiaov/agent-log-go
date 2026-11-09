@@ -67,12 +67,14 @@ serialization boundary.
 
 `agent_auto=true` events are **always** logged (never filtered by `minLevel`).
 
-### HTTP middleware
+### Database (`WrapDB`)
 
-The most natural Go auto-instrumentation — record a `network_request` event per request:
+Wrap `*sql.DB` so every `Query`/`QueryRow`/`Exec` (and their `*Context` variants)
+is recorded as a `db_query` auto-event — no instrumentation code at call sites:
 
 ```go
-http.ListenAndServe(":8080", agentlog.HTTPMiddleware(myHandler))
+db := agentlog.WrapDB(rawDB) // use db in place of rawDB everywhere
+rows, _ := db.Query("SELECT 1")
 ```
 
 ### Crash / panic handling

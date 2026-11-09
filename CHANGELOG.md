@@ -17,6 +17,11 @@ All notable changes to this project are documented in this file.
 
 - `newTraceId()`：生成 Schema 合法的 trace id（uuid4 去横线）。
 
+### Docs
+
+- README 自动埋点小节删除并不存在的 `HTTPMiddleware`，改为 `WrapDB`（包装 `*sql.DB`
+  → `db_query`）；更正网络事件描述（Go 无 HTTP 客户端中间件自动埋点，需手动 `RecordAuto`）。
+
 ## [1.0.0] - 2026-11-07
 
 ### Added
