@@ -76,14 +76,13 @@ const (
 )
 
 // Payload key candidates, checked in order. The canonical SQL key is
-// "statement" (unified across the six SDKs in Schema v1.1); "sql" and "query"
-// are accepted on read only, so JSONL written by older builds still maps.
+// "statement" (unified across the six SDKs); no legacy aliases are read.
 var (
 	httpMethodKeys  = []string{"method", "http_method", "http.method"}
 	urlKeys         = []string{"url", "url_full", "url.full"}
 	statusKeys      = []string{"status_code", "status", "statusCode", "http.status_code"}
 	durationKeys    = []string{"duration_ms", "durationMs", "duration"}
-	sqlKeys         = []string{"statement", "sql", "query"}
+	sqlKeys         = []string{"statement"}
 	dbSystemKeys    = []string{"db_system", "db.system", "system"}
 	dbOperationKeys = []string{"operation", "op"}
 )

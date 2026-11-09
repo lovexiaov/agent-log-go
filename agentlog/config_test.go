@@ -66,13 +66,13 @@ func TestConfigFromJSONPartialOverride(t *testing.T) {
 	if !cfg.RedactEnabled {
 		t.Fatalf("redactEnabled default not applied")
 	}
-	// warning alias should normalize to warn
+	// "warning" is not canonical; it degrades to info
 	cfg2, err := DefaultLoggingConfig().FromJSON(`{"level":"warning"}`)
 	if err != nil {
 		t.Fatalf("FromJSON error: %v", err)
 	}
-	if cfg2.Level != LevelWarn {
-		t.Fatalf("warning should normalize to warn, got %v", cfg2.Level)
+	if cfg2.Level != LevelInfo {
+		t.Fatalf("warning should degrade to info, got %v", cfg2.Level)
 	}
 }
 

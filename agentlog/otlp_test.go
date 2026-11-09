@@ -70,7 +70,7 @@ func TestLevelToSeverity(t *testing.T) {
 		{"warn", "WARN", 13},
 		{"error", "ERROR", 17},
 		{"critical", "FATAL", 21},
-		{"warning", "WARN", 13}, // read-side alias
+		{"warning", "INFO", 9}, // non-canonical -> INFO
 		{"WARN", "WARN", 13},    // case-insensitive
 		{"", "INFO", 9},         // unknown degrades to INFO
 		{"nonsense", "INFO", 9},
@@ -434,9 +434,21 @@ func TestDBSpanUsesStatement(t *testing.T) {
 	}
 }
 
-// Legacy JSONL written before the Schema v1.1 key unification still maps.
-func TestDBSpanAcceptsLegacyKeys(t *testing.T) {
-	for _, key := range []string{"statement", "sql", "query"} {
+// Only the canonical `statement` key is read; legacy `sql` / `query` are ignored.
+func TestDBSpanReadsOnlyStatementKey(t *testing.T) {
+	stmt := baseEvent(string(EventTypeDBQuery), LevelWarn)
+	stmt["payload"] = map[string]interface{}{
+		"operation": "INSERT",
+		"statement": "INSERT INTO t VALUES (1)",
+	}
+	span, _, err := EventToSpan(stmt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := stringAttr(t, span["attributes"], "db.statement"); got != "INSERT INTO t VALUES (1)" {
+		t.Errorf("statement: db.statement = %q", got)
+	}
+	for _, key := range []string{"sql", "query"} {
 		event := baseEvent(string(EventTypeDBQuery), LevelWarn)
 		event["payload"] = map[string]interface{}{
 			"operation": "INSERT",
@@ -446,8 +458,8 @@ func TestDBSpanAcceptsLegacyKeys(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got := stringAttr(t, span["attributes"], "db.statement"); got != "INSERT INTO t VALUES (1)" {
-			t.Errorf("key %q: db.statement = %q", key, got)
+		if got := stringAttr(t, span["attributes"], "db.statement"); got != "" {
+			t.Errorf("key %q should be ignored, got db.statement = %q", key, got)
 		}
 	}
 }

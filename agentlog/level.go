@@ -31,7 +31,7 @@ func (l Level) Weight() int {
 }
 
 // LevelFromName normalizes a (possibly mixed-case) level name to a wire level.
-// "warning" normalizes to "warn". Unknown input defaults to "info".
+// Unknown input (including "warning") defaults to "info".
 func LevelFromName(name string) Level {
 	switch name {
 	case "trace", "TRACE", "Trace":
@@ -40,7 +40,7 @@ func LevelFromName(name string) Level {
 		return LevelDebug
 	case "info", "INFO", "Info":
 		return LevelInfo
-	case "warn", "warning", "WARN", "WARNING", "Warn", "Warning":
+	case "warn", "WARN", "Warn":
 		return LevelWarn
 	case "error", "ERROR", "Error":
 		return LevelError
@@ -50,8 +50,8 @@ func LevelFromName(name string) Level {
 	return LevelInfo
 }
 
-// LevelFromWire maps a known wire level value. "warning" (a read-only alias)
-// normalizes to "warn". Unknown input defaults to "info".
+// LevelFromWire maps a known wire level value. Unknown input (including
+// "warning") defaults to "info".
 func LevelFromWire(name string) Level {
 	switch name {
 	case "trace":
@@ -60,7 +60,7 @@ func LevelFromWire(name string) Level {
 		return LevelDebug
 	case "info":
 		return LevelInfo
-	case "warn", "warning":
+	case "warn":
 		return LevelWarn
 	case "error":
 		return LevelError

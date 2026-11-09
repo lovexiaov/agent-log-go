@@ -120,12 +120,12 @@ func TestAutoAlwaysLogged(t *testing.T) {
 	}
 }
 
-func TestLevelAliasWarning(t *testing.T) {
-	if LevelFromWire("warning") != LevelWarn {
-		t.Fatalf("warning should normalize to warn")
+func TestLevelWarningIsNotCanonical(t *testing.T) {
+	if LevelFromWire("warning") != LevelInfo {
+		t.Fatalf("warning is not canonical; should degrade to info")
 	}
-	if LevelFromName("WARNING") != LevelWarn {
-		t.Fatalf("WARNING should normalize to warn")
+	if LevelFromName("WARNING") != LevelInfo {
+		t.Fatalf("WARNING is not canonical; should degrade to info")
 	}
 }
 
