@@ -71,8 +71,8 @@ func TestLevelToSeverity(t *testing.T) {
 		{"error", "ERROR", 17},
 		{"critical", "FATAL", 21},
 		{"warning", "INFO", 9}, // non-canonical -> INFO
-		{"WARN", "WARN", 13},    // case-insensitive
-		{"", "INFO", 9},         // unknown degrades to INFO
+		{"WARN", "WARN", 13},   // case-insensitive
+		{"", "INFO", 9},        // unknown degrades to INFO
 		{"nonsense", "INFO", 9},
 	}
 	for _, tc := range cases {
