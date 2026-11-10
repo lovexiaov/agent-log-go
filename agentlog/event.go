@@ -20,6 +20,14 @@ const (
 	EventTypeHang           EventType = "hang"
 	EventTypeDBQuery        EventType = "db_query"
 	EventTypeLog            EventType = "log"
+
+	// AI interaction events (Schema v1.4)
+	EventTypeAIRequestInitiated    EventType = "ai_request_initiated"
+	EventTypeAIResponseReceived    EventType = "ai_response_received"
+	EventTypeAIToolCallInitiated   EventType = "ai_tool_call_initiated"
+	EventTypeAIToolCallCompleted   EventType = "ai_tool_call_completed"
+	EventTypeAIGuardrailTriggered EventType = "ai_guardrail_triggered"
+	EventTypeAIError              EventType = "ai_error"
 )
 
 // eventTypePattern matches the schema regex ^[a-z][a-z0-9_]*$

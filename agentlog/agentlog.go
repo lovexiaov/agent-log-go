@@ -16,7 +16,7 @@ func ensureShared() *Logger {
 
 // AgentLog is the package-level facade matching the contract:
 // Bootstrap, Info/Warn/Error/Debug/Trace/Critical, Child, SetLevel, Redact,
-// RecordAuto, ExportPath.
+// RecordAuto, RecordAI* (Schema v1.4), ExportPath.
 type AgentLogFacade struct{}
 
 // AgentLog is the singleton facade instance.
@@ -88,6 +88,35 @@ func (AgentLogFacade) Redact(paths []string) {
 // RecordAuto emits an auto-instrumented event on the shared logger.
 func (AgentLogFacade) RecordAuto(eventType, message string, opts ...Option) {
 	ensureShared().RecordAuto(eventType, message, opts...)
+}
+
+// ---------------------------------------------------------------- AI events
+//
+// Schema v1.4: the six standardized AI interaction events. These are explicit,
+// business-side calls (agent_auto=false); the framework only prepares the data.
+
+func (AgentLogFacade) RecordAIRequest(model, promptText string, extra map[string]interface{}) {
+	ensureShared().RecordAIRequest(model, promptText, extra)
+}
+
+func (AgentLogFacade) RecordAIResponse(model string, totalTokens int, extra map[string]interface{}) {
+	ensureShared().RecordAIResponse(model, totalTokens, extra)
+}
+
+func (AgentLogFacade) RecordAIToolCall(toolName string, toolArguments interface{}, extra map[string]interface{}) {
+	ensureShared().RecordAIToolCall(toolName, toolArguments, extra)
+}
+
+func (AgentLogFacade) RecordAIToolResult(toolName string, ok bool, extra map[string]interface{}) {
+	ensureShared().RecordAIToolResult(toolName, ok, extra)
+}
+
+func (AgentLogFacade) RecordAIGuardrail(guardrailType, reason string, extra map[string]interface{}) {
+	ensureShared().RecordAIGuardrail(guardrailType, reason, extra)
+}
+
+func (AgentLogFacade) RecordAIError(errorType, message string, extra map[string]interface{}) {
+	ensureShared().RecordAIError(errorType, message, extra)
 }
 
 // ExportPath returns the shared logger's sink path.

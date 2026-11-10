@@ -34,7 +34,7 @@ import (
 
 // SDKVersion is reported in the OTLP InstrumentationScope and resource.
 // Keep in sync with CHANGELOG.md.
-const SDKVersion = "1.3.0"
+const SDKVersion = "1.4.0"
 
 // OTLP enum values in their protobuf numeric form (what OTLP/JSON expects).
 const (
@@ -532,7 +532,8 @@ func eventAttributes(event map[string]interface{}) []interface{} {
 	payload := asObject(event["payload"])
 	attrs = append(attrs, otlpKeyValues(payload, payloadAttributePrefix)...)
 	switch asString(event["event_type"]) {
-	case string(EventTypeCrash), string(EventTypeHang):
+	// Schema v1.4: ai_error reuses the v1.3 exception vocabulary.
+	case string(EventTypeCrash), string(EventTypeHang), string(EventTypeAIError):
 		attrs = append(attrs, exceptionAttributes(payload)...)
 	}
 	return attrs

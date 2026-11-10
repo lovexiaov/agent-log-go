@@ -234,6 +234,95 @@ func (l *Logger) RecordAuto(eventType, message string, opts ...Option) {
 	l.emit(in)
 }
 
+// Record emits a fully-specified event with an explicit level and
+// agent_auto=false. Used by the AI convenience helpers and any caller that needs
+// a non-"log" event_type with a custom level (e.g. guardrail=warn, error=error).
+func (l *Logger) Record(level Level, eventType EventType, message string, opts ...Option) {
+	in := emitInput{
+		level:     level,
+		eventType: eventType,
+		agentAuto: false,
+		message:   message,
+		category:  "app",
+	}
+	for _, o := range opts {
+		o(&in)
+	}
+	l.emit(in)
+}
+
+// --- AI interaction event helpers (Schema v1.4) ---
+// Each helper builds the canonical snake_case payload plus any additional fields
+// from the extra map (pass nil when there are none). Extra fields are merged and
+// never clobber the canonical ones.
+
+func aiPayload(core map[string]interface{}, extra map[string]interface{}) map[string]interface{} {
+	p := map[string]interface{}{}
+	for k, v := range core {
+		p[k] = v
+	}
+	if extra != nil {
+		for k, v := range extra {
+			p[k] = v
+		}
+	}
+	return p
+}
+
+// RecordAIRequest emits ai_request_initiated for the start of an LLM call.
+func (l *Logger) RecordAIRequest(model, promptText string, extra map[string]interface{}) {
+	l.Record(LevelInfo, EventTypeAIRequestInitiated, "ai request initiated",
+		WithCategory("ai"),
+		WithPayload(aiPayload(map[string]interface{}{
+			"model": model, "prompt_text": promptText,
+		}, extra)))
+}
+
+// RecordAIResponse emits ai_response_received with token usage for a completed call.
+func (l *Logger) RecordAIResponse(model string, totalTokens int, extra map[string]interface{}) {
+	l.Record(LevelInfo, EventTypeAIResponseReceived, "ai response received",
+		WithCategory("ai"),
+		WithPayload(aiPayload(map[string]interface{}{
+			"model": model, "total_tokens": totalTokens,
+		}, extra)))
+}
+
+// RecordAIToolCall emits ai_tool_call_initiated describing a tool the model wants.
+func (l *Logger) RecordAIToolCall(toolName string, toolArguments interface{}, extra map[string]interface{}) {
+	l.Record(LevelInfo, EventTypeAIToolCallInitiated, "ai tool call initiated",
+		WithCategory("ai"),
+		WithPayload(aiPayload(map[string]interface{}{
+			"tool_name": toolName, "tool_arguments": toolArguments,
+		}, extra)))
+}
+
+// RecordAIToolResult emits ai_tool_call_completed for a finished tool invocation.
+func (l *Logger) RecordAIToolResult(toolName string, ok bool, extra map[string]interface{}) {
+	l.Record(LevelInfo, EventTypeAIToolCallCompleted, "ai tool call completed",
+		WithCategory("ai"),
+		WithPayload(aiPayload(map[string]interface{}{
+			"tool_name": toolName, "ok": ok,
+		}, extra)))
+}
+
+// RecordAIGuardrail emits ai_guardrail_triggered (warn) when a safeguard fires.
+func (l *Logger) RecordAIGuardrail(guardrailType, reason string, extra map[string]interface{}) {
+	l.Record(LevelWarn, EventTypeAIGuardrailTriggered, "ai guardrail triggered",
+		WithCategory("ai"),
+		WithPayload(aiPayload(map[string]interface{}{
+			"guardrail_type": guardrailType, "reason": reason,
+		}, extra)))
+}
+
+// RecordAIError emits ai_error reusing the v1.3 exception vocabulary.
+func (l *Logger) RecordAIError(errorType, message string, extra map[string]interface{}) {
+	l.Record(LevelError, EventTypeAIError, "ai interaction error",
+		WithCategory("ai"),
+		WithPayload(aiPayload(map[string]interface{}{
+			"exception": errorType, "exception_message": message, "mechanism": "handled",
+		}, extra)))
+}
+
 // --- helpers ---
 
 func firstNonEmpty(a, b string) string {
