@@ -34,7 +34,7 @@ import (
 
 // SDKVersion is reported in the OTLP InstrumentationScope and resource.
 // Keep in sync with CHANGELOG.md.
-const SDKVersion = "1.0.0"
+const SDKVersion = "1.3.0"
 
 // OTLP enum values in their protobuf numeric form (what OTLP/JSON expects).
 const (
