@@ -22,10 +22,10 @@ const (
 	EventTypeLog            EventType = "log"
 
 	// AI interaction events (Schema v1.4)
-	EventTypeAIRequestInitiated    EventType = "ai_request_initiated"
-	EventTypeAIResponseReceived    EventType = "ai_response_received"
-	EventTypeAIToolCallInitiated   EventType = "ai_tool_call_initiated"
-	EventTypeAIToolCallCompleted   EventType = "ai_tool_call_completed"
+	EventTypeAIRequestInitiated   EventType = "ai_request_initiated"
+	EventTypeAIResponseReceived   EventType = "ai_response_received"
+	EventTypeAIToolCallInitiated  EventType = "ai_tool_call_initiated"
+	EventTypeAIToolCallCompleted  EventType = "ai_tool_call_completed"
 	EventTypeAIGuardrailTriggered EventType = "ai_guardrail_triggered"
 	EventTypeAIError              EventType = "ai_error"
 )
